@@ -1,7 +1,38 @@
 use std::{
     net::{TcpStream, TcpListener},
-    io::{prelude::*, BufReader, self}
+    io::{prelude::*, BufReader, self},
+    collections::HashMap,
 };
+
+pub struct HttpRouter {
+    routes: HashMap<(String, String), Box<dyn Fn(HttpRequest) + Send + Sync>>,
+}
+
+impl HttpRouter {
+    pub fn new() -> HttpRouter {
+        HttpRouter {
+            routes: HashMap::new()
+        }
+    }
+
+    pub fn add_route<F>(&mut self, method: String, path: String, handler: F)
+    where
+        F: Fn(HttpRequest) + 'static + Send + Sync,
+    {
+        self.routes.insert((method, path), Box::new(handler));
+    }
+
+    pub fn handle_request(&self, mut request: HttpRequest) {
+        let route_key: (String, String) = (request.route.method.clone(), request.route.path.clone());
+        if let Some(handler) = self.routes.get(&route_key) {
+            handler(request);
+        }
+        else {
+            request.println_req();
+            request.respond(HttpResponse::not_found());
+        }
+    }
+}
 
 pub struct HttpServer {
     #[allow(dead_code)]
@@ -26,12 +57,14 @@ impl HttpServer {
 
     /// Begins handling incoming connections.
     ///
-    pub fn start(&self) {
+    pub fn start(&self, router: HttpRouter) {
         for stream_res in self.tcp_listener.incoming() {
             match stream_res {
                 Ok(result) => {
                     let http_req: HttpRequest = HttpRequest::new(result);
-                    Self::handle_connection(http_req);
+                    // commenting this out until router impl is done
+                    // Self::handle_connection(http_req);
+                    router.handle_request(http_req);
                 },
                 Err(error) => match error.kind() {
                     io::ErrorKind::WouldBlock => {
@@ -65,20 +98,6 @@ impl HttpServer {
             }
         }
     }
-
-
-
-    fn handle_connection(mut http_req: HttpRequest) {
-        http_req.println_req();
-
-        if http_req.route.method == "GET" && http_req.route.path == "/" {
-            http_req.respond(HttpResponse::accepted());
-        }
-        else {
-            http_req.respond(HttpResponse::not_found());
-        }
-    }
-
 }
 
 pub struct HttpRoute {
@@ -100,7 +119,7 @@ impl HttpRequest {
         let raw_req_string: String = Self::gen_req_str(&raw_req);
         let route: HttpRoute = HttpRoute {
             method: "GET".to_string(),
-            path: "/".to_string(),
+            path: "/dsaj".to_string(),
         };
         HttpRequest {
             raw_req,
