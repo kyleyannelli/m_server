@@ -1,4 +1,8 @@
-use rust_link::HttpServer;
+use m_server::{
+    server::HttpServer,
+    router::HttpRouter,
+    http::response::HttpResponse
+};
 
 /// Represents the binding address for the server.
 ///
@@ -18,6 +22,14 @@ fn main() {
     };
 
     let http_server: HttpServer = HttpServer::new(self::BIND_ADDR);
-    http_server.start();
+    let mut router: HttpRouter = HttpRouter::new();
+
+    router.add_route("GET".to_string(), "/dsaj".to_string(), |mut req| {
+        req.println_req();
+        req.respond(HttpResponse::ok());
+    });
+
+    http_server.start(router);
+    // http_server.start();
 }
 
