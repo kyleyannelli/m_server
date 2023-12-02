@@ -1,9 +1,10 @@
 use std::{
     net::{TcpStream, TcpListener},
-    io::{prelude::*, BufReader, self}, thread::{JoinHandle, self}
+    io::{prelude::*, BufReader, self}
 };
 
 pub struct HttpServer {
+    #[allow(dead_code)]
     bind_addr: String,
     tcp_listener: TcpListener,
 }
@@ -86,6 +87,7 @@ pub struct HttpRoute {
 }
 
 pub struct HttpRequest {
+    #[allow(dead_code)]
     raw_req: Vec<LineOrError>,
     raw_req_string: String,
     tcp_stream: TcpStream,

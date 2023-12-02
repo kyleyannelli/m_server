@@ -1,7 +1,13 @@
 [package]
-name = "rust_link"
+name = "m_server"
 version = "0.1.0"
 edition = "2021"
+description = "A minimal HTTP server framework"
+license = "GNU General Public License v3.0"
+authors = ["Kyle Yannelli"]
+repository = "https://github.com/kyleyannelli/m_server"
+keywords = ["http", "server", "framework"]
+categories = ["web-programming"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
