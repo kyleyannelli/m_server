@@ -33,7 +33,7 @@ impl HttpServer {
                     let http_req: HttpRequest = HttpRequest::new(result);
                     // commenting this out until router impl is done
                     // Self::handle_connection(http_req);
-                    router.handle_request(http_req);
+                    router.handle_request(&http_req);
                 },
                 Err(error) => match error.kind() {
                     std::io::ErrorKind::WouldBlock => {

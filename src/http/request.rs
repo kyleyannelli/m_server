@@ -30,6 +30,7 @@ impl std::fmt::Display for HttpRequestMethod {
     }
 }
 
+#[derive(Clone)]
 pub struct HttpRequestParser {
     raw_req: Vec<LineOrError>,
 }
@@ -86,6 +87,7 @@ impl HttpRequestParser {
     }
 }
 
+//#[derive(Clone)]
 pub struct HttpRequest {
     #[allow(dead_code)]
     pub raw_req: Vec<LineOrError>,
