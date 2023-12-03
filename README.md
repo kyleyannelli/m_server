@@ -2,7 +2,7 @@
 Super minimal HTTP server framework written in Rust.
 # Getting Started
 #### Below is a super basic example of creating a server and routes.
-```
+```rust
 use m_server::{
   server::HttpServer,
   router::HttpRouter,
