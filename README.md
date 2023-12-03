@@ -23,7 +23,7 @@ fn main() {
   let mut router: HttpRouter = HttpRouter::new(self::POOL_SIZE);
 
   // It is recommended to define the handlers in Controllers, rather than inline.
-  router.add_route(HttpRequestMethod::Get, "/person", |mut http_request| {
+  router.add_route(HttpRequestMethod::Get, "/person/{person_id}", |mut http_request| {
     let json_data = "
     {
       \"name\": \"John Doe\",
@@ -33,7 +33,7 @@ fn main() {
     http_request.respond_with_body(HttpResponse::created(), json_data);
   });
   // example of responding without body
-  router.add_route(HttpRequestMethod::Delete, "/person", |mut http_request| {
+  router.add_route(HttpRequestMethod::Delete, "/person/{person_id}", |mut http_request| {
     http_request.respond(HttpResponse::ok());
   });
 
