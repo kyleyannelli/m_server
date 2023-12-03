@@ -1,4 +1,4 @@
-const HEADER_SERVER_NAME: &'static str = "Server: m_server/0.1.0 ";
+const HEADER_SERVER_NAME: &'static str = "Server: m_server/0.1.4-alpha";
 const HEADER_CONTENT_TYPE: &'static str = "Content-Type: application/json";
 
 pub struct HttpResponse {
