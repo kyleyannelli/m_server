@@ -7,6 +7,7 @@ pub mod http {
 
 mod logger;
 
+// not real
 #[derive(Clone)]
 pub enum LineOrError {
     Line(String),
