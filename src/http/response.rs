@@ -1,3 +1,6 @@
+const HEADER_SERVER_NAME: &'static str = "Server: m_server/0.1.0 ";
+const HEADER_CONTENT_TYPE: &'static str = "Content-Type: application/json";
+
 pub struct HttpResponse {
     pub response: String,
 }
@@ -10,7 +13,7 @@ impl HttpResponse {
     const RESPONSE_ERROR: &'static str = "500 Internal Server Error";
     const RESPONSE_CREATED: &'static str = "201 Created";
     const RESPONSE_ACCEPTED: &'static str = "Accepted";
-
+    
     pub fn new(response: String) -> HttpResponse {
         HttpResponse {
             response,
@@ -43,6 +46,6 @@ impl HttpResponse {
     }
 
     fn status_message(status_code: &str) -> String {
-        return format!("{} {}{}", Self::HTTP_VER, status_code, Self::HTTP_PAD);
+        return format!("{} {}\n{}\n{}{}", Self::HTTP_VER, status_code, self::HEADER_SERVER_NAME, self::HEADER_CONTENT_TYPE, Self::HTTP_PAD);
     }
 }

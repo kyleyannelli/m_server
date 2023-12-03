@@ -36,3 +36,10 @@ pub struct HttpRoute {
     pub method: HttpRequestMethod,
     pub path: String,
 }
+
+impl std::fmt::Display for HttpRoute {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "Method: {} Path: {}", self.method, self.path)
+    }
+}
+

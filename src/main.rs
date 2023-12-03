@@ -27,9 +27,9 @@ fn main() {
     let http_server: HttpServer = HttpServer::new(self::BIND_ADDR);
     let mut router: HttpRouter = HttpRouter::new();
 
-    router.add_route(HttpRequestMethod::Get, "/dsaj".to_string(), |mut req| {
+    router.add_route(HttpRequestMethod::Get, "/".to_string(), |mut req| {
         req.println_req();
-        req.respond(HttpResponse::ok());
+        req.respond_with_body(HttpResponse::ok(), "hello");
     });
 
     http_server.start(router);

@@ -92,13 +92,13 @@ pub struct HttpRequest {
     pub raw_req_string: String,
     pub tcp_stream: TcpStream,
     pub route: HttpRoute,
+    pub req_parser: HttpRequestParser,
 }
 
 impl HttpRequest {
     pub fn new(mut stream: TcpStream) -> HttpRequest {
         let raw_req: Vec<LineOrError> = Self::gen_raw_req(&mut stream);
         let raw_req_string: String = Self::gen_req_str(&raw_req);
-        
         let req_parser: HttpRequestParser = HttpRequestParser::new(raw_req.clone());
 
         let route: HttpRoute = HttpRoute {
@@ -111,16 +111,23 @@ impl HttpRequest {
             raw_req_string,
             tcp_stream: stream,
             route,
+            req_parser,
         }
     }
 
     pub fn println_req(&self) {
+        println!("{}", self.route);
         println!("{}", self.raw_req_string);
-        println!("METHOD IS {}", self.route.method);
     }
 
     pub fn respond(&mut self, http_res: HttpResponse) {
         self.tcp_stream.write_all(http_res.response.as_bytes()).unwrap();
+    }
+
+    pub fn respond_with_body(&mut self, http_res: HttpResponse, body: &str) {
+        let mut res_with_body: String = http_res.response.clone();
+        res_with_body.push_str(body);
+        self.tcp_stream.write_all(res_with_body.as_bytes()).unwrap();
     }
 
     fn gen_raw_req(mut stream: &TcpStream) -> Vec<LineOrError> {
