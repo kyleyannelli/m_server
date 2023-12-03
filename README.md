@@ -1,5 +1,5 @@
 # <img src="/assets/logo.png" alt="Logo" width="120" /> m_server
-Super minimal HTTP server framework written in Rust.
+Super minimal HTTP server framework for delivering JSON data; written in Rust.
 # Getting Started
 #### Below is a super basic example of creating a server and routes.
 ```rust
@@ -13,16 +13,17 @@ use m_server::{
 };
 
 // must be in the IP:PORT format!
-
 const BIND_ADDR: &str = "127.0.0.1:7878";
+// thread pool size for route handling
+const POOL_SIZE: usize = 50;
 
 fn main() {
   // creating a new HttpServer will instantly attempt to bind to the IP:PORT
   let http_server: HttpServer = HttpServer::new(self::BIND_ADDR);
-  let mut router: HttpRouter = HttpRouter::new();
+  let mut router: HttpRouter = HttpRouter::new(self::POOL_SIZE);
 
   // It is recommended to define the handlers in Controllers, rather than inline.
-  router.add_route(HttpRequestMethod::Get, "/person".to_string(), |mut http_request| {
+  router.add_route(HttpRequestMethod::Get, "/person", |mut http_request| {
     let json_data = "
     {
       \"name\": \"John Doe\",
@@ -32,7 +33,7 @@ fn main() {
     http_request.respond_with_body(HttpResponse::created(), json_data);
   });
   // example of responding without body
-  router.add_route(HttpRequestMethod::Delete, "/person".to_string(), |mut http_request| {
+  router.add_route(HttpRequestMethod::Delete, "/person", |mut http_request| {
     http_request.respond(HttpResponse::ok());
   });
 

@@ -1,9 +1,9 @@
 [package]
 name = "m_server"
-version = "0.1.4-alpha"
+version = "0.2.0-alpha"
 status = "alpha"
 edition = "2021"
-description = "A minimal HTTP server framework. ALPHA: NOT READY FOR PRODUCTION!"
+description = "A minimal HTTP server framework for delivering JSON data. \nALPHA: NOT READY FOR PRODUCTION!"
 license = "GPL-3.0-only"
 authors = ["Kyle Yannelli"]
 repository = "https://github.com/kyleyannelli/m_server"
@@ -16,3 +16,4 @@ readme = "README.md"
 [dependencies]
 log = "0.4.20"
 log4rs = "1.2.0"
+threadpool = "1.8.1"
