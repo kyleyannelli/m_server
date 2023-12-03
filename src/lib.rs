@@ -5,6 +5,8 @@ pub mod http {
     pub mod response;
 }
 
+mod logger;
+
 #[derive(Clone)]
 pub enum LineOrError {
     Line(String),

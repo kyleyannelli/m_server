@@ -1,9 +1,9 @@
 [package]
 name = "m_server"
-version = "0.1.1-alpha"
+version = "0.1.2-alpha"
 status = "alpha"
 edition = "2021"
-description = "ALPHA: NOT READY FOR PRODUCTION! A minimal HTTP server framework."
+description = "A minimal HTTP server framework. ALPHA: NOT READY FOR PRODUCTION!"
 license = "GPL-3.0-only"
 authors = ["Kyle Yannelli"]
 repository = "https://github.com/kyleyannelli/m_server"

@@ -116,8 +116,10 @@ impl HttpRequest {
     }
 
     pub fn println_req(&self) {
-        println!("{}", self.route);
-        println!("{}", self.raw_req_string);
+        let mut route_str: String = "".to_string();
+        route_str.push_str(self.route.to_string().as_str());
+        route_str.push_str(&self.raw_req_string);
+        log::info!("{}", route_str);
     }
 
     pub fn respond(&mut self, http_res: HttpResponse) {
@@ -150,7 +152,7 @@ impl HttpRequest {
     }
 
     fn gen_req_str(req: &Vec<LineOrError>) -> String {
-        let mut req_string_mut: String = "\n\t".to_owned();
+        let mut req_string_mut: String = "".to_owned();
 
         for req_line in req {
             req_string_mut.push_str("\n\t");

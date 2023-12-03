@@ -1,6 +1,6 @@
 use std::net::TcpListener;
 
-use crate::{router::HttpRouter, http::request::HttpRequest};
+use crate::{router::HttpRouter, http::request::HttpRequest, logger};
 
 pub struct HttpServer {
     #[allow(dead_code)]
@@ -15,6 +15,7 @@ impl HttpServer {
     ///
     /// * `bind_addr` - String in expected format of ip:port
     pub fn new(bind_addr: &str) -> HttpServer {
+        logger::MServerLogger::setup();
         let tcp_listener = Self::start_listening(bind_addr);
 
         HttpServer {
