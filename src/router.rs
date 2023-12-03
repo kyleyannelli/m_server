@@ -23,6 +23,7 @@ impl HttpRouter {
     pub fn handle_request(&self, mut request: HttpRequest) {
         let route_key: (HttpRequestMethod, String) = (request.route.method.clone() , request.route.path.clone());
         if let Some(handler) = self.routes.get(&route_key) {
+            request.println_req();
             handler(request);
         }
         else {

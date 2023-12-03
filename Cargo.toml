@@ -1,6 +1,7 @@
 [package]
 name = "m_server"
-version = "0.1.0"
+version = "0.1.0-alpha"
+status = "alpha"
 edition = "2021"
 description = "A minimal HTTP server framework"
 license = "GNU General Public License v3.0"
