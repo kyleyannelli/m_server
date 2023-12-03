@@ -1,8 +1,8 @@
 use log::LevelFilter;
 use log4rs::{
-  config::{Root, Appender}, 
-  Config, 
-  append::console::ConsoleAppender, 
+  config::{Root, Appender},
+  Config,
+  append::console::ConsoleAppender,
   encode::pattern::PatternEncoder
 };
 
@@ -26,7 +26,7 @@ impl MServerLogger {
           log::warn!("Logger failed to initialize with external config. Reverting to default configuration.");
         }
     } else {
-      println!("INFO: Logging initialized with external config.");
+      log::info!("INFO: Logging initialized with external config.");
     }
   }
 }
