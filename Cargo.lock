@@ -230,7 +230,7 @@ dependencies = [
 
 [[package]]
 name = "m_server"
-version = "0.1.0"
+version = "0.1.0-alpha"
 dependencies = [
  "log",
  "log4rs",
