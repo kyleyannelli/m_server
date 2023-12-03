@@ -60,6 +60,7 @@ impl HttpRouter {
             let mut req = request.lock().unwrap();
             if let Some(handlers) = routes.get(&req.route.method) {
                 for handler in handlers {
+                    println!("HTTPREQ {} HANDLER {}", &req.route.path, handler.regex.to_string());
                     if handler.regex.is_match(&req.route.path) {
                         // we no longer want the req at this point, as we pass to the handler its
                         // out of scope
@@ -83,7 +84,9 @@ impl HttpRouter {
     fn convert_path_to_regex(&self, path: &str) -> String {
         let mut regex_pattern = "^".to_string();
         for segment in path.split('/') {
-            regex_pattern.push_str("/");
+            if !segment.is_empty() {
+                regex_pattern.push_str("/");
+            }
             if segment.starts_with("{") && segment.ends_with("}") {
                 let param_name = &segment[1..segment.len()-1];
                 regex_pattern.push_str(&format!("(?P<{}>[^/]+)", param_name));
