@@ -1,4 +1,4 @@
-# ![Logo](/assets/logo.png) m_server
+# <img src="/assets/logo.png" alt="Logo" width="120" /> m_server
 Super minimal HTTP server framework written in Rust.
 # Getting Started
 #### Below is a super basic example of creating a server and routes.
