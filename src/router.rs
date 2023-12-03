@@ -1,20 +1,17 @@
 use std::{
     collections::HashMap,
-    sync::Arc,
+    sync::{Arc, Mutex, MutexGuard},
 };
 
 use threadpool::ThreadPool;
 
-use crate::http::{
-    request::{HttpRequest, HttpRequestMethod},
-    response::HttpResponse
-};
+use crate::http::{request::{HttpRequest, HttpRequestMethod}, response::HttpResponse};
 
 use regex::Regex;
 
 struct RouteHandler {
     regex: Regex,
-    handler: Box<dyn Fn(&HttpRequest) + Send + Sync>,
+    handler: Box<dyn Fn(MutexGuard<'_, HttpRequest>) + Send + Sync>,
 }
 
 pub struct HttpRouter {
@@ -34,7 +31,7 @@ impl HttpRouter {
 
     pub fn add_route<F>(&mut self, method: HttpRequestMethod, path: &str, handler: F)
     where
-        F: Fn(&HttpRequest) + 'static + Send + Sync,
+        F: Fn(MutexGuard<'_, HttpRequest>) + 'static + Send + Sync,
     {
         let regex_pattern = self.convert_path_to_regex(path);
         let regex = Regex::new(&regex_pattern).unwrap();
@@ -52,20 +49,34 @@ impl HttpRouter {
         routes.entry(method).or_insert(Vec::<RouteHandler>::new()).push(route_handler);
     }
 
-    pub fn handle_request(&self, mut request: &HttpRequest) {
+    pub fn handle_request(&self, request: Arc<Mutex<HttpRequest>>) {
         // here we have to clone the routes to access it inside of the thread pool, otherwise it's
         //  an illegal move
         let routes = self.routes.clone();
-        let route_path = request.route.path.clone();
+
 
         self.pool.execute(move || {
-            if let Some(handlers) = routes.get(&request.route.method) {
+            // request the object, this will await anything using it
+            let mut req = request.lock().unwrap();
+            if let Some(handlers) = routes.get(&req.route.method) {
                 for handler in handlers {
-                    if handler.regex.is_match(&route_path) {
-                        (handler.handler)(request);
+                    if handler.regex.is_match(&req.route.path) {
+                        // we no longer want the req at this point, as we pass to the handler its
+                        // out of scope
+                        drop(req);
+                        (handler.handler)(request.lock().unwrap());
+                        return;
                     }
                 }
+                // respond with 404
+                req.respond(HttpResponse::not_found());
             }
+            else {
+                // respond with 404
+                req.respond(HttpResponse::not_found());
+            }
+            // probably not needed, but good habit to drop to avoid potential deadlock
+            drop(req);
         });
     }
 
