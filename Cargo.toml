@@ -1,6 +1,6 @@
 [package]
 name = "m_server"
-version = "0.1.2-alpha"
+version = "0.1.3-alpha"
 status = "alpha"
 edition = "2021"
 description = "A minimal HTTP server framework. ALPHA: NOT READY FOR PRODUCTION!"

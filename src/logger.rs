@@ -1,52 +1,33 @@
-use log4rs::config::Deserializers;
-
-const DEFAULT_CONFIG: &'static str = r#"
-refresh_rate: 30 seconds
-appenders:
-  stdout:
-    kind: console
-  file:
-    kind: file
-    path: \"log/output.log\"
-    encoder:
-      pattern: \"{d} - {l} - {m}\n\"
-
-root:
-  level: debug
-  appenders:
-    - stdout
-    - file
-"#;
+use log::LevelFilter;
+use log4rs::{
+  config::{Root, Appender}, 
+  Config, 
+  append::console::ConsoleAppender, 
+  encode::pattern::PatternEncoder
+};
 
 pub struct MServerLogger;
 
 impl MServerLogger {
   pub fn setup() {
-    // setup log4rs
-    match log4rs::init_file("log4rs.yaml", Default::default()) {
-      Ok(i_file) => i_file,
-      Err(error) => {
-        println!("Logger failed to initalize!");
-        println!("Error occurred while attempting to utilize init file. Make sure it's in the root directory!: \n\t{}", error.to_string());
+    if log4rs::init_file("log4rs.yaml", Default::default()).is_err() {
 
-        let deserializers = Deserializers::default();
-        match log4rs::config::load_config_file(&DEFAULT_CONFIG, deserializers) {
-          Ok(config) => {
-            if let Err(error) = log4rs::init_config(config) {
-              println!("Error applying default logging configuration: \n\t{:?}", error);
-              println!("Log output will not be saved or displayed!");
-            }
-            else {
-              println!("***Reverted to default configuration!***");
-            }
-          },
-          Err(error) => {
-            println!("Error parsing default logging configuration: \n\t{:?}", error);
-            println!("Log output will not be saved or displayed!");
-          }
+      let stdout = ConsoleAppender::builder().encoder(Box::new(PatternEncoder::new("{d} - {l} - {m}\n"))).build();
+      let config = Config::builder()
+        .appender(Appender::builder().build("stdout", Box::new(stdout)))
+        .build(Root::builder().appender("stdout").build(LevelFilter::Debug))
+        .unwrap();
+
+        if let Err(e) = log4rs::init_config(config) {
+          println!("Error applying default logging configuration: \n\t{:?}", e);
+          println!("Server output will likely be lost and not output!");
         }
-      }
-    };
+        else {
+          log::warn!("Logger failed to initialize with external config. Reverting to default configuration.");
+        }
+    } else {
+      println!("INFO: Logging initialized with external config.");
+    }
   }
 }
 
