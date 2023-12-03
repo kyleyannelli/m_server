@@ -5,6 +5,7 @@ pub mod http {
     pub mod response;
 }
 
+#[derive(Clone)]
 pub enum LineOrError {
     Line(String),
     Error(String),

@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
-use crate::http::{request::HttpRequest, response::HttpResponse};
+use crate::http::{request::{HttpRequest, HttpRequestMethod}, response::HttpResponse};
 
 pub struct HttpRouter {
-    routes: HashMap<(String, String), Box<dyn Fn(HttpRequest) + Send + Sync>>,
+    routes: HashMap<(HttpRequestMethod, String), Box<dyn Fn(HttpRequest) + Send + Sync>>,
 }
 
 impl HttpRouter {
@@ -13,7 +13,7 @@ impl HttpRouter {
         }
     }
 
-    pub fn add_route<F>(&mut self, method: String, path: String, handler: F)
+    pub fn add_route<F>(&mut self, method: HttpRequestMethod, path: String, handler: F)
     where
         F: Fn(HttpRequest) + 'static + Send + Sync,
     {
@@ -21,7 +21,7 @@ impl HttpRouter {
     }
 
     pub fn handle_request(&self, mut request: HttpRequest) {
-        let route_key: (String, String) = (request.route.method.clone(), request.route.path.clone());
+        let route_key: (HttpRequestMethod, String) = (request.route.method.clone() , request.route.path.clone());
         if let Some(handler) = self.routes.get(&route_key) {
             handler(request);
         }
@@ -33,6 +33,6 @@ impl HttpRouter {
 }
 
 pub struct HttpRoute {
-    pub method: String,
+    pub method: HttpRequestMethod,
     pub path: String,
 }
