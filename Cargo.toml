@@ -1,6 +1,6 @@
 [package]
 name = "m_server"
-version = "0.2.0-alpha"
+version = "0.3.0-alpha"
 status = "alpha"
 edition = "2021"
 description = "A minimal HTTP server framework for delivering JSON data. \nALPHA: NOT READY FOR PRODUCTION!"
@@ -16,4 +16,5 @@ readme = "README.md"
 [dependencies]
 log = "0.4.20"
 log4rs = "1.2.0"
+regex = "1.10.2"
 threadpool = "1.8.1"

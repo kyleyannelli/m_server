@@ -1,4 +1,4 @@
-use std::net::TcpListener;
+use std::{net::TcpListener, sync::{Mutex, Arc}};
 
 use crate::{router::HttpRouter, http::request::HttpRequest, logger};
 
@@ -31,9 +31,10 @@ impl HttpServer {
             match stream_res {
                 Ok(result) => {
                     let http_req: HttpRequest = HttpRequest::new(result);
+                    let wrapped_req = Arc::new(Mutex::new(http_req));
                     // commenting this out until router impl is done
                     // Self::handle_connection(http_req);
-                    router.handle_request(http_req);
+                    router.handle_request(wrapped_req);
                 },
                 Err(error) => match error.kind() {
                     std::io::ErrorKind::WouldBlock => {
