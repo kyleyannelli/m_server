@@ -9,6 +9,7 @@ authors = ["Kyle Yannelli"]
 repository = "https://github.com/kyleyannelli/m_server"
 keywords = ["http", "server", "framework"]
 categories = ["web-programming"]
+readme = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
