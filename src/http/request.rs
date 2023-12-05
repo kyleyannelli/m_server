@@ -1,5 +1,5 @@
 use std::{
-    net::TcpStream,
+    net::{TcpStream, SocketAddr},
     io::{prelude::*, BufReader},
 };
 
@@ -82,7 +82,10 @@ impl HttpRequestParser {
            _ if line.as_str().starts_with("PUT") => HttpRequestMethod::Put,
            _ if line.as_str().starts_with("PATCH") => HttpRequestMethod::Patch,
            _ if line.as_str().starts_with("DELETE") => HttpRequestMethod::Delete,
-           _ => HttpRequestMethod::BadRequest,
+           _ => {
+               log::debug!("Unidentified HTTP Request \"{}\"", line);
+               HttpRequestMethod::BadRequest
+           },
         }
     }
 }
@@ -95,6 +98,7 @@ pub struct HttpRequest {
     pub tcp_stream: TcpStream,
     pub route: HttpRoute,
     pub req_parser: HttpRequestParser,
+    pub peer_addr: Option<SocketAddr>,
 }
 
 impl HttpRequest {
@@ -108,12 +112,21 @@ impl HttpRequest {
             path: req_parser.path(),
         };
 
+        let peer_addr: Option<SocketAddr> = match stream.peer_addr() {
+            Ok(addr) => Some(addr),
+            Err(e) => {
+                log::error!("Socket Address for peer failed! \n\t{}", e);
+                None
+            }
+        };
+
         HttpRequest {
             raw_req,
             raw_req_string,
             tcp_stream: stream,
             route,
             req_parser,
+            peer_addr,
         }
     }
 
