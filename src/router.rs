@@ -53,7 +53,15 @@ impl HttpRouter {
 
     pub fn handle_request(&self, request: Arc<Mutex<HttpRequest>>) {
         let req = request.lock().unwrap();
-        log::info!("{} {}", req.route.method, req.route.path);
+        let req_ip: String = match req.peer_addr {
+            Some(addr) => {
+                addr.ip().to_string()
+            },
+            None => {
+                "IP DNE | Check Logs!".to_owned()
+            }
+        };
+        log::info!("{} {} {}", req_ip, req.route.method, req.route.path);
         drop(req);
         // here we have to clone the routes to access it inside of the thread pool, otherwise it's
         //  an illegal move
