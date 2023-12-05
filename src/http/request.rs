@@ -105,6 +105,7 @@ impl HttpRequest {
     pub fn new(mut stream: TcpStream) -> HttpRequest {
         let raw_req: Vec<LineOrError> = Self::gen_raw_req(&mut stream);
         let raw_req_string: String = Self::gen_req_str(&raw_req);
+        log::debug!("{}", raw_req_string);
         let req_parser: HttpRequestParser = HttpRequestParser::new(raw_req.clone());
 
         let route: HttpRoute = HttpRoute {
