@@ -23,6 +23,7 @@ pub struct HttpRouter {
 
 impl HttpRouter {
     pub fn new(pool_size: usize) -> HttpRouter {
+        log::debug!("Router created! Added routes will be output to debug.");
         HttpRouter {
             routes: Arc::new(HashMap::new()),
             pool: ThreadPool::new(pool_size),
@@ -39,6 +40,7 @@ impl HttpRouter {
             regex,
             handler: Box::new(handler),
         };
+        log::debug!("{} {} | Regex: {}", method, path, route_handler.regex.to_string());
         let routes = match Arc::get_mut(&mut self.routes) {
             Some(routes) => routes,
             None => {
@@ -50,17 +52,18 @@ impl HttpRouter {
     }
 
     pub fn handle_request(&self, request: Arc<Mutex<HttpRequest>>) {
+        let req = request.lock().unwrap();
+        log::info!("{} {}", req.route.method, req.route.path);
+        drop(req);
         // here we have to clone the routes to access it inside of the thread pool, otherwise it's
         //  an illegal move
         let routes = self.routes.clone();
-
 
         self.pool.execute(move || {
             // request the object, this will await anything using it
             let mut req = request.lock().unwrap();
             if let Some(handlers) = routes.get(&req.route.method) {
                 for handler in handlers {
-                    println!("HTTPREQ {} HANDLER {}", &req.route.path, handler.regex.to_string());
                     if handler.regex.is_match(&req.route.path) {
                         // we no longer want the req at this point, as we pass to the handler its
                         // out of scope
