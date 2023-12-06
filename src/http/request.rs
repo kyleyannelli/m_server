@@ -148,9 +148,11 @@ impl HttpRequest {
         self.tcp_stream.write_all(res_with_body.as_bytes()).unwrap();
     }
 
+    /// Generates HTTP request headers into Vec<LineOrError>
     fn gen_raw_req(mut stream: &TcpStream) -> Vec<LineOrError> {
-        let buf_reader = BufReader::new(&mut stream);
+        let mut buf_reader = BufReader::new(&mut stream);
         let http_request: Vec<LineOrError> = buf_reader
+            .by_ref()
             .lines()
             .map(|result| match result {
                 Ok(res) => LineOrError::Line(res),
@@ -164,6 +166,25 @@ impl HttpRequest {
             LineOrError::Error(_) => true,
         })
         .collect();
+        let mut content_length = 0;
+        let strang = "Content-Length:";
+        for header in &http_request {
+            if header.to_string().starts_with(strang) {
+                let sub_head = &header.to_string()[(strang.len())..(header.to_string().len())].replace(" ", "");
+                content_length = match sub_head.to_string().parse::<usize>() {
+                    Ok(len) => len,
+                    Err(e) => {
+                        log::error!("{} Header Len {}", e, sub_head);
+                        0
+                    }
+                };
+            }
+        }
+        let mut body_buf = vec![0; content_length];
+        log::info!("Header Length {}", content_length);
+        buf_reader.read_exact(&mut body_buf).unwrap();
+        let body = String::from_utf8(body_buf).unwrap();
+        println!("Body\n{:#?}", body);
         return http_request;
     }
 
