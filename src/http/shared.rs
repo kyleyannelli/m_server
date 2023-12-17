@@ -17,11 +17,11 @@ impl HttpBodyType {
 pub struct HttpHeaderBody {
     pub lines: Vec<LineOrError>,
     pub header_len: usize, 
-    pub body_type: HttpBodyType,
+    pub body_type: Option<HttpBodyType>,
 }
 
 impl HttpHeaderBody {
-    pub fn new(lines: Vec<LineOrError>, header_len: usize) -> Result<HttpHeaderBody, String> {
+    pub fn new(lines: Vec<LineOrError>, header_len: usize, is_body: bool) -> Result<HttpHeaderBody, String> {
         let mut body_type: Option<HttpBodyType> = None;
         for line_or_error in &lines {
             match line_or_error {
@@ -48,10 +48,26 @@ impl HttpHeaderBody {
             }
         }
 
-        Ok(HttpHeaderBody {
-            lines,
-            header_len,
-            body_type: body_type.unwrap(),
-        })
+        match body_type {
+            Some(body) => {
+                Ok(HttpHeaderBody {
+                    lines,
+                    header_len,
+                    body_type: Some(body),
+                })
+            },
+            None => {
+                if is_body {
+                    Err("No body type found! Either bad request or Content-Type header N/A".to_string())
+                }
+                else {
+                    Ok(HttpHeaderBody {
+                        lines,
+                        header_len,
+                        body_type: None,
+                    })
+                }
+            }
+        }
     }
 }

@@ -213,7 +213,7 @@ impl HttpRequest {
         buf_reader.read_exact(&mut body_buf).unwrap();
         let body = String::from_utf8(body_buf).unwrap();
         log::debug!("Body\n{:#?}", body);
-        let body_o = HttpHeaderBody::new(http_request, content_length);
+        let body_o = HttpHeaderBody::new(http_request, content_length, content_length != 0);
         match body_o {
             Ok(body) => Ok((body, stream)),
             Err(reason) => Err((reason, stream)),
