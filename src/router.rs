@@ -5,7 +5,10 @@ use std::{
 
 use threadpool::ThreadPool;
 
-use crate::http::{request::{HttpRequest, HttpRequestMethod}, response::HttpResponse};
+use crate::http::{
+    request::{HttpRequest, HttpRequestMethod},
+    response::HttpResponse,
+};
 
 use regex::Regex;
 
@@ -40,7 +43,12 @@ impl HttpRouter {
             regex,
             handler: Box::new(handler),
         };
-        log::debug!("{} {} | Regex: {}", method, path, route_handler.regex.to_string());
+        log::debug!(
+            "{} {} | Regex: {}",
+            method,
+            path,
+            route_handler.regex.to_string()
+        );
         let routes = match Arc::get_mut(&mut self.routes) {
             Some(routes) => routes,
             None => {
@@ -48,18 +56,17 @@ impl HttpRouter {
                 std::process::exit(1);
             }
         };
-        routes.entry(method).or_insert(Vec::<RouteHandler>::new()).push(route_handler);
+        routes
+            .entry(method)
+            .or_insert(Vec::<RouteHandler>::new())
+            .push(route_handler);
     }
 
     pub fn handle_request(&self, request: Arc<Mutex<HttpRequest>>) {
         let req = request.lock().unwrap();
-        let req_ip: String = match req.peer_addr {
-            Some(addr) => {
-                addr.ip().to_string()
-            },
-            None => {
-                "IP DNE | Check Logs!".to_owned()
-            }
+        let req_ip: String = match &req.peer_addr {
+            Some(addr) => addr.clone(),
+            None => "IP DNE | Check Logs!".to_owned(),
         };
         log::info!("{} {} {}", req_ip, req.route.method, req.route.path);
         drop(req);
@@ -82,8 +89,7 @@ impl HttpRouter {
                 }
                 // respond with 404
                 req.respond(HttpResponse::not_found());
-            }
-            else {
+            } else {
                 // respond with 404
                 req.respond(HttpResponse::not_found());
             }
@@ -99,10 +105,9 @@ impl HttpRouter {
                 regex_pattern.push_str("/");
             }
             if segment.starts_with("{") && segment.ends_with("}") {
-                let param_name = &segment[1..segment.len()-1];
+                let param_name = &segment[1..segment.len() - 1];
                 regex_pattern.push_str(&format!("(?P<{}>[^/]+)", param_name));
-            }
-            else {
+            } else {
                 regex_pattern.push_str(segment);
             }
         }
@@ -122,4 +127,3 @@ impl std::fmt::Display for HttpRoute {
         write!(f, "Method: {} Path: {}", self.method, self.path)
     }
 }
-

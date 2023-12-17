@@ -1,6 +1,6 @@
 use std::{net::TcpListener, sync::{Mutex, Arc}};
 
-use crate::{router::HttpRouter, http::request::HttpRequest, logger};
+use crate::{router::HttpRouter, http::{request::{HttpRequest, HttpRequestFailure}, response::HttpResponse}, logger};
 
 pub struct HttpServer {
     #[allow(dead_code)]
@@ -29,12 +29,20 @@ impl HttpServer {
     pub fn start(&self, router: HttpRouter) {
         for stream_res in self.tcp_listener.incoming() {
             match stream_res {
-                Ok(result) => {
-                    let http_req: HttpRequest = HttpRequest::new(result);
-                    let wrapped_req = Arc::new(Mutex::new(http_req));
-                    // commenting this out until router impl is done
-                    // Self::handle_connection(http_req);
-                    router.handle_request(wrapped_req);
+                Ok(stream) => {
+                    let h_req: Result<HttpRequest, HttpRequestFailure> = HttpRequest::new(stream);
+                    match h_req {
+                        Ok(http_req) => {
+                            let wrapped_req = Arc::new(Mutex::new(http_req));
+                            // commenting this out until router impl is done
+                            // Self::handle_connection(http_req);
+                            router.handle_request(wrapped_req);
+                        },
+                        Err(mut http_fail) => {
+                            log::error!("Error occured from HttpRequest: \n\t{}", http_fail.fail_reason);
+                            http_fail.respond(HttpResponse::bad_request());
+                        }
+                    }
                 },
                 Err(error) => match error.kind() {
                     std::io::ErrorKind::WouldBlock => {

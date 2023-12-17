@@ -11,6 +11,7 @@ impl HttpResponse {
     const RESPONSE_OK: &'static str = "200 OK";
     const RESPONSE_NOT_FOUND: &'static str = "404 Not Found";
     const RESPONSE_ERROR: &'static str = "500 Internal Server Error";
+    const BAD_REQUEST: &'static str = "400 Bad Request";
     const RESPONSE_CREATED: &'static str = "201 Created";
     const RESPONSE_ACCEPTED: &'static str = "Accepted";
     
@@ -18,6 +19,11 @@ impl HttpResponse {
         HttpResponse {
             response,
         }
+    }
+
+    pub fn bad_request() -> HttpResponse {
+        let response_str: String = Self::status_message(Self::BAD_REQUEST);
+        return HttpResponse::new(response_str);
     }
 
     pub fn ok() -> HttpResponse {
