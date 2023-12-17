@@ -1,3 +1,4 @@
+#![allow(clippy::redundant_static_lifetimes)]
 pub mod server;
 pub mod router;
 pub mod http {

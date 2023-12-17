@@ -62,7 +62,7 @@ impl HttpServer {
         match TcpListener::bind(bind_addr) {
             Ok(lis) => {
                 log::info!("{} {}", "Server bound on", bind_addr);
-                return lis;
+                lis
             },
             Err(error) => match error.kind() {
                 std::io::ErrorKind::AddrInUse => {

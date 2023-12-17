@@ -62,7 +62,7 @@ impl HttpRequestParser {
         }
     }
 
-    pub fn determine_path(line: &String) -> String {
+    pub fn determine_path(line: &str) -> String {
         match line.split_whitespace().nth(1) {
             Some(path) => path.to_string(),
             None => "/".to_string(),
@@ -92,7 +92,7 @@ pub struct HttpRequestFailure {
 impl HttpRequestFailure {
     pub fn respond(&mut self, http_res: HttpResponse) {
         match self.tcp_stream.write_all(http_res.response.as_bytes()) {
-            Ok(_) => return,
+            Ok(_) => (),
             Err(e) => {
                 log::error!("Failed to write to TcpStream in respond!\n\t{}", e);
             }
@@ -103,7 +103,7 @@ impl HttpRequestFailure {
         let mut res_with_body: String = http_res.response.clone();
         res_with_body.push_str(body);
         match self.tcp_stream.write_all(res_with_body.as_bytes()) {
-            Ok(_) => return,
+            Ok(_) => (),
             Err(e) => {
                 log::error!("Failed to write to TcpStream in respond with body!\n\t{}", e);
             }
@@ -173,7 +173,7 @@ impl HttpRequest {
 
     pub fn respond(&mut self, http_res: HttpResponse) {
         match self.tcp_stream.write_all(http_res.response.as_bytes()) {
-            Ok(_) => return,
+            Ok(_) => (),
             Err(e) => {
                 log::error!("Failed to write to TcpStream in respond!\n\t{}", e);
             }
@@ -184,7 +184,7 @@ impl HttpRequest {
         let mut res_with_body: String = http_res.response.clone();
         res_with_body.push_str(body);
         match self.tcp_stream.write_all(res_with_body.as_bytes()) {
-            Ok(_) => return,
+            Ok(_) => (),
             Err(e) => {
                 log::error!("Failed to write to TcpStream in respond with body!\n\t{}", e);
             }
@@ -214,7 +214,7 @@ impl HttpRequest {
         for header in &http_request {
             if header.to_string().starts_with(strang) {
                 let sub_head = &header.to_string()[(strang.len())..(header.to_string().len())]
-                    .replace(" ", "");
+                    .replace(' ', "");
                 content_length = match sub_head.to_string().parse::<usize>() {
                     Ok(len) => len,
                     Err(e) => {
@@ -251,10 +251,10 @@ impl HttpRequest {
             req_string_mut.push_str("\n\t");
             req_string_mut.push_str(req_line.to_string().as_str());
         }
-        req_string_mut.push_str("\n");
+        req_string_mut.push('\n');
 
         let req_string: String = req_string_mut.to_string();
 
-        return req_string;
+        req_string
     }
 }

@@ -125,17 +125,17 @@ impl HttpRouter {
         let mut regex_pattern = "^".to_string();
         for segment in path.split('/') {
             if !segment.is_empty() {
-                regex_pattern.push_str("/");
+                regex_pattern.push('/');
             }
-            if segment.starts_with("{") && segment.ends_with("}") {
+            if segment.starts_with('{') && segment.ends_with('}') {
                 let param_name = &segment[1..segment.len() - 1];
                 regex_pattern.push_str(&format!("(?P<{}>[^/]+)", param_name));
             } else {
                 regex_pattern.push_str(segment);
             }
         }
-        regex_pattern.push_str("$");
-        return regex_pattern.clone();
+        regex_pattern.push('$');
+        regex_pattern.clone()
     }
 }
 

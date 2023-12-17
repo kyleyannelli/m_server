@@ -23,35 +23,35 @@ impl HttpResponse {
 
     pub fn bad_request() -> HttpResponse {
         let response_str: String = Self::status_message(Self::BAD_REQUEST);
-        return HttpResponse::new(response_str);
+        HttpResponse::new(response_str)
     }
 
     pub fn ok() -> HttpResponse {
         let response_str: String = Self::status_message(Self::RESPONSE_OK);
-        return HttpResponse::new(response_str);
+        HttpResponse::new(response_str)
     }
 
     pub fn not_found() -> HttpResponse {
         let response_str: String = Self::status_message(Self::RESPONSE_NOT_FOUND);
-        return HttpResponse::new(response_str);
+        HttpResponse::new(response_str)
     }
 
     pub fn created() -> HttpResponse {
         let response_str: String = Self::status_message(Self::RESPONSE_CREATED);
-        return HttpResponse::new(response_str);
+        HttpResponse::new(response_str)
     }
 
     pub fn accepted() -> HttpResponse {
         let response_str: String = Self::status_message(Self::RESPONSE_ACCEPTED);
-        return HttpResponse::new(response_str);
+        HttpResponse::new(response_str)
     }
 
     pub fn error() -> HttpResponse {
         let response_str: String = Self::status_message(Self::RESPONSE_ERROR);
-        return HttpResponse::new(response_str);
+        HttpResponse::new(response_str)
     }
 
     fn status_message(status_code: &str) -> String {
-        return format!("{} {}\n{}\n{}{}", Self::HTTP_VER, status_code, self::HEADER_SERVER_NAME, self::HEADER_CONTENT_TYPE, Self::HTTP_PAD);
+        format!("{} {}\n{}\n{}{}", Self::HTTP_VER, status_code, self::HEADER_SERVER_NAME, self::HEADER_CONTENT_TYPE, Self::HTTP_PAD)
     }
 }
