@@ -1,3 +1,4 @@
+// currently there are conflicting issues with the compiler and clippy regarding static lifetimes
 #![allow(clippy::redundant_static_lifetimes)]
 pub mod server;
 pub mod router;
