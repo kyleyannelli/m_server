@@ -38,7 +38,13 @@ impl HttpRouter {
         F: Fn(Result<MutexGuard<'_, HttpRequest>, MutexGuard<'_, HttpRequest>>) + 'static + Send + Sync,
     {
         let regex_pattern = self.convert_path_to_regex(path);
-        let regex = Regex::new(&regex_pattern).unwrap();
+        let regex = match Regex::new(&regex_pattern) {
+            Ok(reg) => reg,
+            Err(e) => {
+                log::error!("Path not added! Issue creating regex for {}!\n\t{}", path, e);
+                return;
+            }
+        };
         let route_handler = RouteHandler {
             regex,
             handler: Box::new(handler),

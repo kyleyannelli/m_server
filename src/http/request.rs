@@ -91,15 +91,23 @@ pub struct HttpRequestFailure {
 
 impl HttpRequestFailure {
     pub fn respond(&mut self, http_res: HttpResponse) {
-        self.tcp_stream
-            .write_all(http_res.response.as_bytes())
-            .unwrap();
+        match self.tcp_stream.write_all(http_res.response.as_bytes()) {
+            Ok(_) => return,
+            Err(e) => {
+                log::error!("Failed to write to TcpStream in respond!\n\t{}", e);
+            }
+        }
     }
 
     pub fn respond_with_body(&mut self, http_res: HttpResponse, body: &str) {
         let mut res_with_body: String = http_res.response.clone();
         res_with_body.push_str(body);
-        self.tcp_stream.write_all(res_with_body.as_bytes()).unwrap();
+        match self.tcp_stream.write_all(res_with_body.as_bytes()) {
+            Ok(_) => return,
+            Err(e) => {
+                log::error!("Failed to write to TcpStream in respond with body!\n\t{}", e);
+            }
+        };
     }
 }
 
@@ -164,15 +172,23 @@ impl HttpRequest {
     }
 
     pub fn respond(&mut self, http_res: HttpResponse) {
-        self.tcp_stream
-            .write_all(http_res.response.as_bytes())
-            .unwrap();
+        match self.tcp_stream.write_all(http_res.response.as_bytes()) {
+            Ok(_) => return,
+            Err(e) => {
+                log::error!("Failed to write to TcpStream in respond!\n\t{}", e);
+            }
+        }
     }
 
     pub fn respond_with_body(&mut self, http_res: HttpResponse, body: &str) {
         let mut res_with_body: String = http_res.response.clone();
         res_with_body.push_str(body);
-        self.tcp_stream.write_all(res_with_body.as_bytes()).unwrap();
+        match self.tcp_stream.write_all(res_with_body.as_bytes()) {
+            Ok(_) => return,
+            Err(e) => {
+                log::error!("Failed to write to TcpStream in respond with body!\n\t{}", e);
+            }
+        };
     }
 
     /// Generates HTTP request headers into Vec<LineOrError>
@@ -211,8 +227,15 @@ impl HttpRequest {
         }
         let mut body_buf = vec![0; content_length];
         log::debug!("Header Length {}", content_length);
-        buf_reader.read_exact(&mut body_buf).unwrap();
-        let body = String::from_utf8(body_buf).unwrap();
+        if let Err(e) = buf_reader.read_exact(&mut body_buf) {
+            return Err((e.to_string(), stream));
+        }
+        let body = match String::from_utf8(body_buf) {
+            Ok(bod) => bod,
+            Err(e) => {
+                return Err((e.to_string(), stream))
+            }
+        };
         log::debug!("Body\n{:#?}", body);
         let body_o = HttpHeaderBody::new(http_request, content_length, content_length != 0);
         match body_o {
