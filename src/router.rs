@@ -14,7 +14,7 @@ use regex::Regex;
 
 struct RouteHandler {
     regex: Regex,
-    handler: Box<dyn Fn(MutexGuard<'_, HttpRequest>) + Send + Sync>,
+    handler: Box<dyn Fn(Result<MutexGuard<'_, HttpRequest>, MutexGuard<'_, HttpRequest>>) + Send + Sync>,
 }
 
 pub struct HttpRouter {
@@ -35,7 +35,7 @@ impl HttpRouter {
 
     pub fn add_route<F>(&mut self, method: HttpRequestMethod, path: &str, handler: F)
     where
-        F: Fn(MutexGuard<'_, HttpRequest>) + 'static + Send + Sync,
+        F: Fn(Result<MutexGuard<'_, HttpRequest>, MutexGuard<'_, HttpRequest>>) + 'static + Send + Sync,
     {
         let regex_pattern = self.convert_path_to_regex(path);
         let regex = Regex::new(&regex_pattern).unwrap();
@@ -63,7 +63,13 @@ impl HttpRouter {
     }
 
     pub fn handle_request(&self, request: Arc<Mutex<HttpRequest>>) {
-        let req = request.lock().unwrap();
+        let req = match request.lock() {
+            Ok(req) => req,
+            Err(poisoned_error) => {
+                log::warn!("Poisoned mutex in handle request! Continuing, but data is likely unreliable!"); 
+                poisoned_error.into_inner()
+            }
+        };
         let req_ip: String = match &req.peer_addr {
             Some(addr) => addr.clone(),
             None => "IP DNE | Check Logs!".to_owned(),
@@ -76,14 +82,25 @@ impl HttpRouter {
 
         self.pool.execute(move || {
             // request the object, this will await anything using it
-            let mut req = request.lock().unwrap();
+            let mut req = match request.lock() {
+                Ok(req) => req,
+                Err(poisoned_error) => {
+                    log::warn!("Poisoned mutex in handle request! Continuing, but data is likely unreliable!"); 
+                    poisoned_error.into_inner()
+                }
+            };            
             if let Some(handlers) = routes.get(&req.route.method) {
                 for handler in handlers {
                     if handler.regex.is_match(&req.route.path) {
                         // we no longer want the req at this point, as we pass to the handler its
                         // out of scope
                         drop(req);
-                        (handler.handler)(request.lock().unwrap());
+                        (handler.handler)(match request.lock() {
+                            Ok(req) => Ok(req),
+                            Err(poisoned_req) => {
+                                Err(poisoned_req.into_inner())
+                            },
+                        });
                         return;
                     }
                 }

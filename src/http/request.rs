@@ -206,6 +206,7 @@ impl HttpRequest {
                         0
                     }
                 };
+                break;
             }
         }
         let mut body_buf = vec![0; content_length];
