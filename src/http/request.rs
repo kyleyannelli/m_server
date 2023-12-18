@@ -159,7 +159,7 @@ impl HttpRequest {
                         tcp_stream: stream,
                         fail_reason: reason_str,
                     }
-                    )
+                   )
             }
         }
     }
@@ -204,11 +204,11 @@ impl HttpRequest {
                     LineOrError::Error(error.to_string())
                 }
             })
-            .take_while(|line| match line {
-                LineOrError::Line(line) => !line.is_empty(),
-                LineOrError::Error(_) => true,
-            })
-            .collect();
+        .take_while(|line| match line {
+            LineOrError::Line(line) => !line.is_empty(),
+            LineOrError::Error(_) => true,
+        })
+        .collect();
         let mut content_length = 0;
         let strang = "Content-Length:";
         for header in &http_request {
@@ -230,14 +230,14 @@ impl HttpRequest {
         if let Err(e) = buf_reader.read_exact(&mut body_buf) {
             return Err((e.to_string(), stream));
         }
-        let body = match String::from_utf8(body_buf) {
+        let body: String = match String::from_utf8(body_buf) {
             Ok(bod) => bod,
             Err(e) => {
                 return Err((e.to_string(), stream))
             }
         };
-        log::debug!("Body\n{:#?}", body);
-        let body_o = HttpHeaderBody::new(http_request, content_length, content_length != 0);
+        log::debug!("Body\n{}", body);
+        let body_o = HttpHeaderBody::new(http_request, content_length, body);
         match body_o {
             Ok(body) => Ok((body, stream)),
             Err(reason) => Err((reason, stream)),

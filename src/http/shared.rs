@@ -1,5 +1,8 @@
+use std::collections::HashMap;
+
 use crate::LineOrError;
 
+#[derive(Copy, Clone)]
 pub enum HttpBodyType {
     FormData,
     UrlEncoded,
@@ -18,10 +21,11 @@ pub struct HttpHeaderBody {
     pub lines: Vec<LineOrError>,
     pub header_len: usize, 
     pub body_type: Option<HttpBodyType>,
+    pub body_params: Option<HashMap<String, String>>,
 }
 
 impl HttpHeaderBody {
-    pub fn new(lines: Vec<LineOrError>, header_len: usize, is_body: bool) -> Result<HttpHeaderBody, String> {
+    pub fn new(lines: Vec<LineOrError>, header_len: usize, body_str: String) -> Result<HttpHeaderBody, String> {
         let mut body_type: Option<HttpBodyType> = None;
         for line_or_error in &lines {
             match line_or_error {
@@ -54,20 +58,49 @@ impl HttpHeaderBody {
                     lines,
                     header_len,
                     body_type: Some(body),
+                    body_params: Self::gen_params(body_str, body),
                 })
             },
             None => {
-                if is_body {
-                    Err("No body type found! Either bad request or Content-Type header N/A".to_string())
-                }
-                else {
-                    Ok(HttpHeaderBody {
-                        lines,
-                        header_len,
-                        body_type: None,
-                    })
-                }
+                Ok(HttpHeaderBody {
+                    lines,
+                    header_len,
+                    body_type: None,
+                    body_params: None,
+                })
             }
         }
+    }
+
+    fn gen_params(body: String, body_type: HttpBodyType) -> Option<HashMap<String, String>> {
+        if body.len() <= 0 {
+            return None;
+        }
+        match body_type {
+            HttpBodyType::FormData => {
+                None
+            },
+            HttpBodyType::UrlEncoded => {
+                Some(Self::gen_params_url_encoded(body))
+            }
+        }
+    }
+
+    fn gen_params_url_encoded(body: String) -> HashMap<String, String> {
+        let mut params: HashMap<String, String> = HashMap::new();
+        for key_value in body.split('&') {
+            let k_v: Vec<&str> = key_value.split('=').collect();
+            if k_v.len() == 2 {
+                if let Some(key) = k_v.first() {
+                    if let Some(value) = k_v.last() {
+                        params.insert(key.to_string(), value.to_string());
+                    }
+                }
+            }
+            else {
+                log::warn!("Received intended key value in UrlEncoded body, but length was {} instead of expected 2.", k_v.len());
+            }
+        }
+        params
     }
 }
