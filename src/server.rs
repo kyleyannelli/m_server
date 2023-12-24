@@ -28,9 +28,12 @@ impl HttpServer {
     ///
     pub fn start(&self, router: HttpRouter) {
         for stream_res in self.tcp_listener.incoming() {
+            let start_time = std::time::Instant::now();
             match stream_res {
                 Ok(stream) => {
                     let h_req: Result<HttpRequest, HttpRequestFailure> = HttpRequest::new(stream);
+                    let elapsed = start_time.elapsed();
+                    log::debug!("Request took {}ms", elapsed.as_micros());
                     match h_req {
                         Ok(http_req) => {
                             let wrapped_req = Arc::new(Mutex::new(http_req));

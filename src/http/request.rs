@@ -228,7 +228,6 @@ impl HttpRequest {
                 return Err((e.to_string(), stream))
             }
         };
-        log::debug!("Body\n{}", body);
         let body_o = HttpHeaderBody::new(http_request, content_length, body);
         match body_o {
             Ok(body) => Ok((body, stream)),

@@ -91,16 +91,12 @@ impl HttpHeaderBody {
     fn gen_params_url_encoded(body: String) -> HashMap<String, String> {
         let mut params: HashMap<String, String> = HashMap::new();
         for key_value in body.split('&') {
-            let k_v: Vec<&str> = key_value.split('=').collect();
-            if k_v.len() == 2 {
-                if let Some(key) = k_v.first() {
-                    if let Some(value) = k_v.last() {
-                        params.insert(HttpUrlDecoder::decode_utf_8(key), HttpUrlDecoder::decode_utf_8(value));
-                    }
-                }
+            let mut k_v = key_value.split('=');
+            if let (Some(key), Some(value)) = (k_v.next(), k_v.next()) {
+                params.insert(HttpUrlDecoder::decode_utf_8(key), HttpUrlDecoder::decode_utf_8(value));
             }
             else {
-                log::warn!("Received intended key value in UrlEncoded body, but length was {} instead of expected 2.", k_v.len());
+                log::warn!("Received intended key value in UrlEncoded body, but was unexpected.");
             }
         }
         params
