@@ -6,7 +6,10 @@ pub mod http {
     pub mod request;
     pub mod response;
     pub mod shared;
+    pub mod decoder;
 }
+#[macro_use]
+extern crate lazy_static;
 
 mod logger;
 

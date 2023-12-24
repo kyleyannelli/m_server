@@ -30,19 +30,12 @@ impl std::fmt::Display for HttpRequestMethod {
     }
 }
 
-#[derive(Clone)]
-pub struct HttpRequestParser {
-    raw_req: Vec<LineOrError>,
-}
+pub struct HttpRequestParser;
 
 impl HttpRequestParser {
-    pub fn new(raw_req: Vec<LineOrError>) -> HttpRequestParser {
-        HttpRequestParser { raw_req }
-    }
-
-    pub fn method(&self) -> HttpRequestMethod {
+    pub fn method(raw: &Vec<LineOrError>) -> HttpRequestMethod {
         // attempt to get first row which should contain method & path
-        match self.raw_req.first() {
+        match raw.first() {
             Some(method) => match method {
                 LineOrError::Line(line) => Self::determine_method(line),
                 LineOrError::Error(_) => HttpRequestMethod::BadRequest,
@@ -51,9 +44,9 @@ impl HttpRequestParser {
         }
     }
 
-    pub fn path(&self) -> String {
+    pub fn path(raw: &Vec<LineOrError>) -> String {
         // attempt to get first row which should contain method & path
-        match self.raw_req.first() {
+        match raw.first() {
             Some(method) => match method {
                 LineOrError::Line(line) => Self::determine_path(line),
                 LineOrError::Error(_) => "/".to_string(),
@@ -99,8 +92,9 @@ impl HttpRequestFailure {
         }
     }
 
-    pub fn respond_with_body(&mut self, http_res: HttpResponse, body: &str) {
-        let mut res_with_body: String = http_res.response.clone();
+    pub fn respond_with_body(&mut self, http_res: &HttpResponse, body: &str) {
+        let mut res_with_body: String = String::new();
+        res_with_body.push_str(&http_res.response);
         res_with_body.push_str(body);
         match self.tcp_stream.write_all(res_with_body.as_bytes()) {
             Ok(_) => (),
@@ -116,7 +110,6 @@ pub struct HttpRequest {
     #[allow(dead_code)]
     pub tcp_stream: TcpStream,
     pub route: HttpRoute,
-    pub req_parser: HttpRequestParser,
     pub peer_addr: Option<String>,
     pub raw_req_string: String,
     pub body: HttpHeaderBody,
@@ -127,13 +120,12 @@ impl HttpRequest {
         let h_body = Self::gen_raw_req(stream);
         match h_body {
             Ok((header_body, stream)) => {
-                let req_parser: HttpRequestParser = HttpRequestParser::new(header_body.lines.clone());
-                let raw_req_string = Self::gen_req_str(&header_body.lines.clone()); 
+                let raw_req_string = Self::gen_req_str(&header_body.lines); 
                 log::debug!("{}", raw_req_string);
 
                 let route: HttpRoute = HttpRoute {
-                    method: req_parser.method(),
-                    path: req_parser.path(),
+                    method: HttpRequestParser::method(&header_body.lines),
+                    path: HttpRequestParser::path(&header_body.lines),
                 };
 
                 let peer_addr: Option<String> = match &stream.peer_addr() {
@@ -147,7 +139,6 @@ impl HttpRequest {
                 Ok(HttpRequest {
                     tcp_stream: stream,
                     route,
-                    req_parser,
                     peer_addr,
                     raw_req_string,
                     body: header_body,
@@ -180,8 +171,9 @@ impl HttpRequest {
         }
     }
 
-    pub fn respond_with_body(&mut self, http_res: HttpResponse, body: &str) {
-        let mut res_with_body: String = http_res.response.clone();
+    pub fn respond_with_body(&mut self, http_res: &HttpResponse, body: &str) {
+        let mut res_with_body: String = String::new();
+        res_with_body.push_str(&http_res.response);
         res_with_body.push_str(body);
         match self.tcp_stream.write_all(res_with_body.as_bytes()) {
             Ok(_) => (),

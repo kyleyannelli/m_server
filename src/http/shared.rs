@@ -2,6 +2,8 @@ use std::collections::HashMap;
 
 use crate::LineOrError;
 
+use super::decoder::HttpUrlDecoder;
+
 #[derive(Copy, Clone)]
 pub enum HttpBodyType {
     FormData,
@@ -93,7 +95,7 @@ impl HttpHeaderBody {
             if k_v.len() == 2 {
                 if let Some(key) = k_v.first() {
                     if let Some(value) = k_v.last() {
-                        params.insert(key.to_string(), value.to_string());
+                        params.insert(HttpUrlDecoder::decode_utf_8(key), HttpUrlDecoder::decode_utf_8(value));
                     }
                 }
             }
