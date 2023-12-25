@@ -1,12 +1,10 @@
 use std::{
     collections::HashMap,
-    sync::{Arc, Mutex, MutexGuard},
+    net::TcpStream, sync::{atomic::AtomicUsize, Arc},
 };
 
-use threadpool::ThreadPool;
-
 use crate::http::{
-    request::{HttpRequest, HttpRequestMethod},
+    request::{HttpRequest, HttpRequestMethod, HttpRequestFailure},
     response::HttpResponse,
 };
 
@@ -14,28 +12,26 @@ use regex::Regex;
 
 struct RouteHandler {
     regex: Regex,
-    handler: Box<dyn Fn(Result<MutexGuard<'_, HttpRequest>, MutexGuard<'_, HttpRequest>>) + Send + Sync>,
+    handler: Box<dyn Fn(HttpRequest) + Send + Sync>,
 }
 
 pub struct HttpRouter {
     // Arc is an Atomic wrapper to make the HashMap thread safe
     //  each thread will get a clone of the wrapped data to achieve this
-    routes: Arc<HashMap<HttpRequestMethod, Vec<RouteHandler>>>,
-    pool: ThreadPool,
+    routes: HashMap<HttpRequestMethod, Vec<RouteHandler>>,
 }
 
 impl HttpRouter {
-    pub fn new(pool_size: usize) -> HttpRouter {
+    pub fn new() -> HttpRouter {
         log::debug!("Router created! Added routes will be output to debug.");
         HttpRouter {
-            routes: Arc::new(HashMap::new()),
-            pool: ThreadPool::new(pool_size),
+            routes: HashMap::new(),
         }
     }
 
     pub fn add_route<F>(&mut self, method: HttpRequestMethod, path: &str, handler: F)
     where
-        F: Fn(Result<MutexGuard<'_, HttpRequest>, MutexGuard<'_, HttpRequest>>) + 'static + Send + Sync,
+        F: Fn(HttpRequest) + 'static + Send + Sync,
     {
         let regex_pattern = self.convert_path_to_regex(path);
         let regex = match Regex::new(&regex_pattern) {
@@ -55,70 +51,46 @@ impl HttpRouter {
             path,
             route_handler.regex.to_string()
         );
-        let routes = match Arc::get_mut(&mut self.routes) {
-            Some(routes) => routes,
-            None => {
-                log::error!("Failed to create route! Unable to mutate routes object to add route.\n\t Please report this error at https://github.com/kyleyannelli/m_server");
-                std::process::exit(1);
-            }
-        };
-        routes
+        self.routes
             .entry(method)
             .or_insert(Vec::<RouteHandler>::new())
             .push(route_handler);
     }
 
-    pub fn handle_request(&self, request: Arc<Mutex<HttpRequest>>) {
-        let req = match request.lock() {
-            Ok(req) => req,
-            Err(poisoned_error) => {
-                log::warn!("Poisoned mutex in handle request! Continuing, but data is likely unreliable!"); 
-                poisoned_error.into_inner()
-            }
-        };
-        let req_ip: String = match &req.peer_addr {
-            Some(addr) => addr.clone(),
-            None => "IP DNE | Check Logs!".to_owned(),
-        };
-        log::info!("{} {} {}", req_ip, req.route.method, req.route.path);
-        drop(req);
-        // here we have to clone the routes to access it inside of the thread pool, otherwise it's
-        //  an illegal move
-        let routes = self.routes.clone();
+    pub fn handle_request(&self, stream: TcpStream) {
+        log::debug!("Handling request!");
+        let start_time = std::time::Instant::now();
+        let h_req: Result<HttpRequest, HttpRequestFailure> = HttpRequest::new(stream);
+        let elapsed = start_time.elapsed();
+        log::debug!("Request parsing took {} microseconds", elapsed.as_micros());
+        match h_req {
+            Ok(mut http_req) => {
+                let req_ip: String = match &http_req.peer_addr {
+                    Some(addr) => addr.clone(),
+                    None => "IP DNE | Check Logs!".to_owned(),
+                };
+                log::info!("{} {} {}", req_ip, http_req.route.method, http_req.route.path);
+                let routes = &self.routes;
 
-        self.pool.execute(move || {
-            // request the object, this will await anything using it
-            let mut req = match request.lock() {
-                Ok(req) => req,
-                Err(poisoned_error) => {
-                    log::warn!("Poisoned mutex in handle request! Continuing, but data is likely unreliable!"); 
-                    poisoned_error.into_inner()
-                }
-            };            
-            if let Some(handlers) = routes.get(&req.route.method) {
-                for handler in handlers {
-                    if handler.regex.is_match(&req.route.path) {
-                        // we no longer want the req at this point, as we pass to the handler its
-                        // out of scope
-                        drop(req);
-                        (handler.handler)(match request.lock() {
-                            Ok(req) => Ok(req),
-                            Err(poisoned_req) => {
-                                Err(poisoned_req.into_inner())
-                            },
-                        });
-                        return;
+                if let Some(handlers) = routes.get(&http_req.route.method) {
+                    for handler in handlers {
+                        if handler.regex.is_match(&http_req.route.path) {
+                            (handler.handler)(http_req);
+                            return;
+                        }
                     }
+                    // respond with 404
+                    http_req.respond(HttpResponse::not_found());
+                } else {
+                    // respond with 404
+                    http_req.respond(HttpResponse::not_found());
                 }
-                // respond with 404
-                req.respond(HttpResponse::not_found());
-            } else {
-                // respond with 404
-                req.respond(HttpResponse::not_found());
+            },
+            Err(mut http_fail) => {
+                log::error!("Error occured from HttpRequest: \n\t{}", http_fail.fail_reason);
+                http_fail.respond(HttpResponse::bad_request());
             }
-            // probably not needed, but good habit to drop to avoid potential deadlock
-            drop(req);
-        });
+        }
     }
 
     fn convert_path_to_regex(&self, path: &str) -> String {

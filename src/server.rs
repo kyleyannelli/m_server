@@ -1,4 +1,6 @@
-use std::{net::TcpListener, sync::{Mutex, Arc}};
+use std::{net::TcpListener, sync::{Mutex, Arc, atomic::AtomicPtr, RwLock}, process::{exit, self}};
+
+use tokio::runtime::Builder;
 
 use crate::{router::HttpRouter, http::{request::{HttpRequest, HttpRequestFailure}, response::HttpResponse}, logger};
 
@@ -6,6 +8,7 @@ pub struct HttpServer {
     #[allow(dead_code)]
     bind_addr: String,
     tcp_listener: TcpListener,
+    pool_size: usize,
 }
 
 impl HttpServer {
@@ -21,31 +24,42 @@ impl HttpServer {
         HttpServer {
             bind_addr: bind_addr.to_string(),
             tcp_listener,
+            pool_size: 12,
         }
+    }
+
+    pub fn set_pool_size(mut self, pool_size: usize) -> HttpServer {
+        self.pool_size = pool_size;
+        self
     }
 
     /// Begins handling incoming connections.
     ///
-    pub fn start(&self, router: HttpRouter) {
+    pub fn start(&self, router: &'static Arc<RwLock<HttpRouter>>) {
+        let runtime = Builder::new_multi_thread()
+            .worker_threads(self.pool_size)
+            .enable_all()
+            .build()
+            .unwrap();
+
+
         for stream_res in self.tcp_listener.incoming() {
-            let start_time = std::time::Instant::now();
+            log::debug!("RES");
             match stream_res {
                 Ok(stream) => {
-                    let h_req: Result<HttpRequest, HttpRequestFailure> = HttpRequest::new(stream);
-                    let elapsed = start_time.elapsed();
-                    log::debug!("Request took {}ms", elapsed.as_micros());
-                    match h_req {
-                        Ok(http_req) => {
-                            let wrapped_req = Arc::new(Mutex::new(http_req));
-                            // commenting this out until router impl is done
-                            // Self::handle_connection(http_req);
-                            router.handle_request(wrapped_req);
-                        },
-                        Err(mut http_fail) => {
-                            log::error!("Error occured from HttpRequest: \n\t{}", http_fail.fail_reason);
-                            http_fail.respond(HttpResponse::bad_request());
-                        }
-                    }
+                    runtime.spawn(async move {
+                        log::debug!("TOKIOOOOOOO");
+                        match router.read() {
+                            Ok(ok_router) => {
+                                log::debug!("OK ROUTER");
+                                ok_router.handle_request(stream);
+                            },
+                            Err(error) => {
+                                log::error!("Failed to get router lock!\n\t{}", error.to_string());
+                                return;
+                            }
+                        };
+                    });
                 },
                 Err(error) => match error.kind() {
                     std::io::ErrorKind::WouldBlock => {
@@ -59,6 +73,7 @@ impl HttpServer {
                 }
             }
         }
+        runtime.shutdown_timeout(std::time::Duration::from_secs(30));
     }
 
     fn start_listening(bind_addr: &str) -> TcpListener {
