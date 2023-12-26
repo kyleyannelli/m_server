@@ -140,6 +140,7 @@ lazy_static! {
         m.insert("%7D", "}");
         m.insert("%7E", "~");
         m.insert("%80", "€");
+        m.insert("%0A", "\n");
         m
     };
     // reverse lookup
@@ -241,6 +242,7 @@ lazy_static! {
         m.insert("}", "%7D");
         m.insert("~", "%7E");
         m.insert("€", "%80");
+        m.insert("\n", "%0A");
         m
     };
 }
