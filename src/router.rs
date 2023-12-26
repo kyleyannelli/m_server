@@ -77,7 +77,7 @@ impl HttpRouter {
                         if handler.regex.is_match(&http_req.route.path) {
                             (handler.handler)(&mut http_req);
                             if !http_req.responded() {
-                                log::warn!("Handler for {} {} did not respond! Responding with OK", http_req.route.method, http_req.route.path);
+                                log::debug!("Handler for {} {} did not respond! Responding with OK", http_req.route.method, http_req.route.path);
                                 http_req.respond(HttpResponse::ok());
                             }
                             return;
