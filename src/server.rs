@@ -32,7 +32,7 @@ impl HttpServer {
         }
     }
 
-    pub fn add_route(&mut self, method: HttpRequestMethod, path: &str, handler: fn(HttpRequest)) {
+    pub fn add_route(&mut self, method: HttpRequestMethod, path: &str, handler: fn(&mut HttpRequest)) {
         match ROUTER.write() {
             Ok(mut router) => {
                 router.add_route(method, path, handler);

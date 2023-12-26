@@ -12,7 +12,7 @@ use regex::Regex;
 
 struct RouteHandler {
     regex: Regex,
-    handler: Box<dyn Fn(HttpRequest) + Send + Sync>,
+    handler: Box<dyn Fn(&mut HttpRequest) + Send + Sync>,
 }
 
 pub struct HttpRouter {
@@ -31,7 +31,7 @@ impl HttpRouter {
 
     pub fn add_route<F>(&mut self, method: HttpRequestMethod, path: &str, handler: F)
     where
-        F: Fn(HttpRequest) + 'static + Send + Sync,
+        F: Fn(&mut HttpRequest) + 'static + Send + Sync,
     {
         let regex_pattern = self.convert_path_to_regex(path);
         let regex = match Regex::new(&regex_pattern) {
@@ -75,7 +75,11 @@ impl HttpRouter {
                 if let Some(handlers) = routes.get(&http_req.route.method) {
                     for handler in handlers {
                         if handler.regex.is_match(&http_req.route.path) {
-                            (handler.handler)(http_req);
+                            (handler.handler)(&mut http_req);
+                            if !http_req.responded() {
+                                log::warn!("Handler for {} {} did not respond! Responding with OK", http_req.route.method, http_req.route.path);
+                                http_req.respond(HttpResponse::ok());
+                            }
                             return;
                         }
                     }

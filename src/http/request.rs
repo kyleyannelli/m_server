@@ -113,6 +113,7 @@ pub struct HttpRequest {
     pub peer_addr: Option<String>,
     pub raw_req_string: String,
     pub body: HttpHeaderBody,
+    responded: bool,
 }
 
 impl HttpRequest {
@@ -142,6 +143,7 @@ impl HttpRequest {
                     peer_addr,
                     raw_req_string,
                     body: header_body,
+                    responded: false,
                 })
             },
             Err((reason_str, stream)) => {
@@ -155,6 +157,10 @@ impl HttpRequest {
         }
     }
 
+    pub fn responded(&self) -> bool {
+        self.responded
+    }
+
     pub fn println_req(&self) {
         let mut route_str: String = "".to_string();
         route_str.push_str(self.route.to_string().as_str());
@@ -163,15 +169,24 @@ impl HttpRequest {
     }
 
     pub fn respond(&mut self, http_res: HttpResponse) {
+        if self.responded {
+            log::warn!("Attempted to respond to request twice!");
+            return;
+        }
         match self.tcp_stream.write_all(http_res.response.as_bytes()) {
             Ok(_) => (),
             Err(e) => {
                 log::error!("Failed to write to TcpStream in respond!\n\t{}", e);
             }
         }
+        self.responded = true;
     }
 
     pub fn respond_with_body(&mut self, http_res: &HttpResponse, body: &str) {
+        if self.responded {
+            log::warn!("Attempted to respond to request twice!");
+            return;
+        }
         let mut res_with_body: String = String::new();
         res_with_body.push_str(&http_res.response);
         res_with_body.push_str(body);
@@ -181,6 +196,7 @@ impl HttpRequest {
                 log::error!("Failed to write to TcpStream in respond with body!\n\t{}", e);
             }
         };
+        self.responded = true;
     }
 
     /// Generates HTTP request headers into Vec<LineOrError>
