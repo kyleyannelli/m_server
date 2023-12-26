@@ -123,7 +123,8 @@ impl HttpHeaderBody {
                        log::debug!("key-value: {}", key_value);
                        match key_value.trim_start_matches("Content-Disposition: form-data; name=\"") {
                            kv if kv.len() > 0 => {
-                               key = kv.chars().take(kv.chars().count() - 2).collect::<String>();
+                               let char_count: usize = kv.chars().count() - 2;
+                               key = kv.chars().take(char_count).collect::<String>();
                            },
                            _ => {
                                log::warn!("Bad boundary in FormData request. Parameters may be missing!");
