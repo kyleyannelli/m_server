@@ -1,10 +1,12 @@
 use std::collections::HashMap;
 
+use log::Log;
+
 use crate::LineOrError;
 
 use super::decoder::HttpUrlDecoder;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub enum HttpBodyType {
     FormData,
     UrlEncoded,
@@ -29,13 +31,16 @@ pub struct HttpHeaderBody {
 impl HttpHeaderBody {
     pub fn new(lines: Vec<LineOrError>, header_len: usize, body_str: String) -> Result<HttpHeaderBody, String> {
         let mut body_type: Option<HttpBodyType> = None;
+        let mut boundary: Option<String> = None;
         for line_or_error in &lines {
             match line_or_error {
                 LineOrError::Line(line) => {
                     if line.starts_with("Content-Type: ") {
                         let content_type = line.trim_start_matches("Content-Type: ").trim();
                         body_type = match content_type {
-                            ct if ct.starts_with(HttpBodyType::FormData.to_str()) => Some(HttpBodyType::FormData),
+                            ct if ct.starts_with(HttpBodyType::FormData.to_str()) => {
+                                Some(HttpBodyType::FormData)
+                            },
                             ct if ct.starts_with(HttpBodyType::UrlEncoded.to_str()) => Some(HttpBodyType::UrlEncoded),
                             _ => None,
                         };
@@ -43,6 +48,11 @@ impl HttpHeaderBody {
                             let mut message = "Bad request! Unrecognized Content-Type: ".to_string();
                             message.push_str(content_type);
                             return Err(message);
+                        }
+                        if let Some(bod) = body_type {
+                            if bod == HttpBodyType::FormData {
+                                boundary = Some(content_type.trim_start_matches(HttpBodyType::FormData.to_str()).trim().trim_start_matches("; boundary=").trim().to_string())
+                            }
                         }
                         break;
                     }
@@ -60,7 +70,7 @@ impl HttpHeaderBody {
                     lines,
                     header_len,
                     body_type: Some(body),
-                    body_params: Self::gen_params(body_str, body),
+                    body_params: Self::gen_params(body_str, body, boundary),
                 })
             },
             None => {
@@ -74,18 +84,76 @@ impl HttpHeaderBody {
         }
     }
 
-    fn gen_params(body: String, body_type: HttpBodyType) -> Option<HashMap<String, String>> {
+    fn gen_params(body: String, body_type: HttpBodyType, boundary: Option<String>) -> Option<HashMap<String, String>> {
         if body.len() <= 0 {
             return None;
         }
         match body_type {
             HttpBodyType::FormData => {
-                None
+                Some(Self::gen_params_form_data(body, boundary))
             },
             HttpBodyType::UrlEncoded => {
                 Some(Self::gen_params_url_encoded(body))
             }
         }
+    }
+
+    fn gen_params_form_data(body: String, boundary: Option<String>) -> HashMap<String, String> {
+        let mut params = HashMap::new();
+        match boundary {
+            Some(bound) => {
+                let mut was_boundary: bool = false;
+                let mut bad_boundary: bool = false;
+                let mut key = String::new();
+                let mut value = String::new();
+                for key_value in body.split("\n") {
+                    // we have entered in bound
+                    if key_value.contains(&bound) {
+                        if key.len() > 0 {
+                            params.insert(key, value);
+                        }
+                        was_boundary = true;
+                        bad_boundary = false;
+                        key = String::new();
+                        value = String::new();
+                    }
+                    // should be content-disp line
+                    else if was_boundary {
+                       was_boundary = false; 
+                       log::debug!("key-value: {}", key_value);
+                       match key_value.trim_start_matches("Content-Disposition: form-data; name=\"") {
+                           kv if kv.len() > 0 => {
+                               key = kv.chars().take(kv.chars().count() - 2).collect::<String>();
+                           },
+                           _ => {
+                               log::warn!("Bad boundary in FormData request. Parameters may be missing!");
+                               bad_boundary = true
+                           },
+                       }
+                    }
+                    // make sure its not just an empty line
+                    else if !bad_boundary && key_value.len() > 1 {
+                        // if value is len is greater than 0 that means we need to add a \n
+                        if value.len() > 0 {
+                            value.push_str("\n");
+                        }
+                        value.push_str(key_value);
+                    }
+                }
+            },
+            None => (),
+        }
+        println!(" ");
+        println!(" ");
+        println!(" ");
+        // iterate over hashmap and just print out the key value pairs
+        for (key, value) in &params {
+            log::debug!("{}: {}", key, value);
+        }
+        println!(" ");
+        println!(" ");
+        println!(" ");
+        params
     }
 
     fn gen_params_url_encoded(body: String) -> HashMap<String, String> {
