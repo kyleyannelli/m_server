@@ -1,6 +1,6 @@
 use std::{
     collections::HashMap,
-    net::TcpStream, sync::{atomic::AtomicUsize, Arc},
+    net::TcpStream,
 };
 
 use crate::http::{

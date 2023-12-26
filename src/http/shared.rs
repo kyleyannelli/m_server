@@ -1,7 +1,5 @@
 use std::collections::HashMap;
 
-use log::Log;
-
 use crate::LineOrError;
 
 use super::decoder::HttpUrlDecoder;

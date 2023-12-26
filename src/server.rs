@@ -1,8 +1,12 @@
-use std::{net::TcpListener, sync::{Mutex, Arc, atomic::AtomicPtr, RwLock}, process::{exit, self}};
+use std::{net::TcpListener, sync::{Arc, RwLock}};
 
 use tokio::runtime::Builder;
 
-use crate::{router::HttpRouter, http::{request::{HttpRequest, HttpRequestFailure}, response::HttpResponse}, logger};
+use crate::{router::HttpRouter, http::request::{HttpRequest, HttpRequestMethod}, logger};
+
+lazy_static! {
+    static ref ROUTER: Arc<RwLock<HttpRouter>> = Arc::new(RwLock::new(HttpRouter::new()));
+}
 
 pub struct HttpServer {
     #[allow(dead_code)]
@@ -28,6 +32,17 @@ impl HttpServer {
         }
     }
 
+    pub fn add_route(&mut self, method: HttpRequestMethod, path: &str, handler: fn(HttpRequest)) {
+        match ROUTER.write() {
+            Ok(mut router) => {
+                router.add_route(method, path, handler);
+            },
+            Err(error) => {
+                log::error!("Failed to get router lock! Route not added!\n\t{}", error.to_string());
+            }
+        };
+    }
+
     pub fn set_pool_size(mut self, pool_size: usize) -> HttpServer {
         self.pool_size = pool_size;
         self
@@ -35,7 +50,7 @@ impl HttpServer {
 
     /// Begins handling incoming connections.
     ///
-    pub fn start(&self, router: &'static Arc<RwLock<HttpRouter>>) {
+    pub fn start(&self) {
         let runtime = Builder::new_multi_thread()
             .worker_threads(self.pool_size)
             .enable_all()
@@ -49,7 +64,7 @@ impl HttpServer {
                 Ok(stream) => {
                     runtime.spawn(async move {
                         log::debug!("TOKIOOOOOOO");
-                        match router.read() {
+                        match ROUTER.read() {
                             Ok(ok_router) => {
                                 log::debug!("OK ROUTER");
                                 ok_router.handle_request(stream);
