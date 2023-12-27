@@ -242,18 +242,4 @@ impl HttpRequest {
             Err(reason) => Err((reason, stream)),
         }
     }
-
-    fn gen_req_str(req: &Vec<LineOrError>) -> String {
-        let mut req_string_mut: String = "".to_owned();
-
-        for req_line in req {
-            req_string_mut.push_str("\n\t");
-            req_string_mut.push_str(req_line.to_string().as_str());
-        }
-        req_string_mut.push('\n');
-
-        let req_string: String = req_string_mut.to_string();
-
-        req_string
-    }
 }
