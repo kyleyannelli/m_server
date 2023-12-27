@@ -225,18 +225,17 @@ impl HttpRequest {
                 break;
             }
         }
-        let mut body_buf = vec![0; content_length];
-        log::debug!("Header Length {}", content_length);
-        if let Err(e) = buf_reader.read_exact(&mut body_buf) {
-            return Err((e.to_string(), stream));
-        }
-        let body: String = match String::from_utf8(body_buf) {
-            Ok(bod) => bod,
-            Err(e) => {
-                return Err((e.to_string(), stream))
-            }
-        };
-        let body_o = HttpHeaderBody::new(http_request, content_length, body);
+        // let mut body_buf = vec![0; content_length];
+        // if let Err(e) = buf_reader.read_exact(&mut body_buf) {
+            // return Err((e.to_string(), stream));
+        // }
+        // let body: String = match String::from_utf8(body_buf) {
+            // Ok(bod) => bod,
+            // Err(e) => {
+                // return Err((e.to_string(), stream))
+            // }
+        // };
+        let body_o = HttpHeaderBody::new(http_request, buf_reader, content_length);
         match body_o {
             Ok(body) => Ok((body, stream)),
             Err(reason) => Err((reason, stream)),
