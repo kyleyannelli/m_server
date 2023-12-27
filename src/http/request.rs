@@ -105,13 +105,10 @@ impl HttpRequestFailure {
     }
 }
 
-//#[derive(Clone)]
 pub struct HttpRequest {
-    #[allow(dead_code)]
     pub tcp_stream: TcpStream,
     pub route: HttpRoute,
     pub peer_addr: Option<String>,
-    pub raw_req_string: String,
     pub body: HttpHeaderBody,
     responded: bool,
 }
@@ -121,9 +118,6 @@ impl HttpRequest {
         let h_body = Self::gen_raw_req(stream);
         match h_body {
             Ok((header_body, stream)) => {
-                let raw_req_string = Self::gen_req_str(&header_body.lines); 
-                log::debug!("{}", raw_req_string);
-
                 let route: HttpRoute = HttpRoute {
                     method: HttpRequestParser::method(&header_body.lines),
                     path: HttpRequestParser::path(&header_body.lines),
@@ -141,7 +135,6 @@ impl HttpRequest {
                     tcp_stream: stream,
                     route,
                     peer_addr,
-                    raw_req_string,
                     body: header_body,
                     responded: false,
                 })
@@ -164,7 +157,6 @@ impl HttpRequest {
     pub fn println_req(&self) {
         let mut route_str: String = "".to_string();
         route_str.push_str(self.route.to_string().as_str());
-        route_str.push_str(&self.raw_req_string);
         log::info!("{}", route_str);
     }
 

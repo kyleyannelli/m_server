@@ -1,8 +1,25 @@
+//! This module contains the `HttpUrlDecoder` struct which is used to decode url encoded strings.
+//! It also contains the `ENCODED_CHARACTERS` and `DECODED_CHARACTERS` static HashMaps which are used
+//! for the decoding and encoding of url encoded strings.
 use std::collections::HashMap;
 
 pub struct HttpUrlDecoder;
 
 impl HttpUrlDecoder {
+    /// Decodes a url encoded string into a utf-8 string.
+    ///
+    /// # Arguments
+    /// * `line` - The url encoded string to decode.
+    ///
+    /// # Returns
+    /// * `String` - The decoded utf-8 string.
+    ///
+    /// # Example
+    /// ```
+    /// use m_server::http::url_decoder::HttpUrlDecoder;
+    /// let decoded = HttpUrlDecoder::decode_utf_8("Hello%20World");
+    /// assert_eq!(decoded, "Hello World");
+    /// ```
     pub fn decode_utf_8(line: &str) -> String {
         let mut decoded = String::new();
         let mut chars = line.chars();
@@ -27,6 +44,20 @@ impl HttpUrlDecoder {
         decoded
     }
 
+    /// Encodes a utf-8 string into a url encoded string.
+    ///
+    /// # Arguments
+    /// * `line` - The utf-8 string to encode.
+    ///
+    /// # Returns
+    /// * `String` - The encoded url string.
+    ///
+    /// # Example
+    /// ```
+    /// use m_server::http::url_decoder::HttpUrlDecoder;
+    /// let encoded = HttpUrlDecoder::encode_utf_8("Hello World");
+    /// assert_eq!(encoded, "Hello%20World");
+    /// ```
     pub fn encode_utf_8(line: &str) -> String {
         let mut encoded = String::new();
         while let Some(c) = line.chars().next() {
