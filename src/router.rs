@@ -58,7 +58,6 @@ impl HttpRouter {
     }
 
     pub fn handle_request(&self, stream: TcpStream) {
-        log::debug!("Handling request!");
         let start_time = std::time::Instant::now();
         let h_req: Result<HttpRequest, HttpRequestFailure> = HttpRequest::new(stream);
         let elapsed = start_time.elapsed();
