@@ -171,6 +171,12 @@ impl HttpRequest {
                 log::error!("Failed to write to TcpStream in respond!\n\t{}", e);
             }
         }
+        match self.tcp_stream.shutdown(std::net::Shutdown::Both) {
+            Ok(_) => (),
+            Err(e) => {
+                log::error!("Failed to shutdown TcpStream in respond!\n\t{}", e);
+            }
+        }
         self.responded = true;
     }
 
@@ -188,6 +194,12 @@ impl HttpRequest {
                 log::error!("Failed to write to TcpStream in respond with body!\n\t{}", e);
             }
         };
+        match self.tcp_stream.shutdown(std::net::Shutdown::Both) {
+            Ok(_) => (),
+            Err(e) => {
+                log::error!("Failed to shutdown TcpStream in respond!\n\t{}", e);
+            }
+        }
         self.responded = true;
     }
 
