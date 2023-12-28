@@ -194,11 +194,26 @@ impl HttpRequest {
     /// Generates HTTP request headers into Vec<LineOrError>
     fn gen_raw_req(mut stream: TcpStream) -> Result<(HttpHeaderBody, TcpStream), (String, TcpStream)> {
         let mut buf_reader = BufReader::new(&mut stream);
+        let mut content_length: usize = 0;
+        let mut got_content_length = false;
+        let length_str = "Content-Length:";
         let http_request: Vec<LineOrError> = buf_reader
             .by_ref()
             .lines()
             .map(|result| match result {
-                Ok(res) => LineOrError::Line(res),
+                Ok(res) => {
+                    if !got_content_length && res.starts_with(length_str) {
+                        content_length = match &res[(length_str.len())..(res.len())].replace(' ', "").parse::<usize>() {
+                            Ok(len) => len.clone(),
+                            Err(e) => {
+                                log::error!("{} Header Len {}", e, res);
+                                0
+                            }
+                        };
+                        got_content_length = true;
+                    }
+                    LineOrError::Line(res)
+                }
                 Err(error) => {
                     log::error!("Error reading line:\n\t{}", error);
                     LineOrError::Error(error.to_string())
@@ -209,32 +224,7 @@ impl HttpRequest {
             LineOrError::Error(_) => true,
         })
         .collect();
-        let mut content_length = 0;
-        let strang = "Content-Length:";
-        for header in &http_request {
-            if header.to_string().starts_with(strang) {
-                let sub_head = &header.to_string()[(strang.len())..(header.to_string().len())]
-                    .replace(' ', "");
-                content_length = match sub_head.to_string().parse::<usize>() {
-                    Ok(len) => len,
-                    Err(e) => {
-                        log::error!("{} Header Len {}", e, sub_head);
-                        0
-                    }
-                };
-                break;
-            }
-        }
-        // let mut body_buf = vec![0; content_length];
-        // if let Err(e) = buf_reader.read_exact(&mut body_buf) {
-            // return Err((e.to_string(), stream));
-        // }
-        // let body: String = match String::from_utf8(body_buf) {
-            // Ok(bod) => bod,
-            // Err(e) => {
-                // return Err((e.to_string(), stream))
-            // }
-        // };
+
         let body_o = HttpHeaderBody::new(http_request, buf_reader, content_length);
         match body_o {
             Ok(body) => Ok((body, stream)),

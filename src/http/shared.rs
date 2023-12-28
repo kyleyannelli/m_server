@@ -136,6 +136,7 @@ impl HttpHeaderBody {
                                 value.push('\n');
                             }
                             value.push_str(&line);
+                        // add in plain new line
                         } else if !bad_boundary {
                             if !value.is_empty() {
                                 value.push('\n');
