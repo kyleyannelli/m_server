@@ -59,14 +59,11 @@ impl HttpServer {
 
 
         for stream_res in self.tcp_listener.incoming() {
-            log::debug!("RES");
             match stream_res {
                 Ok(stream) => {
                     runtime.spawn(async move {
-                        log::debug!("TOKIOOOOOOO");
                         match ROUTER.read() {
                             Ok(ok_router) => {
-                                log::debug!("OK ROUTER");
                                 ok_router.handle_request(stream);
                             },
                             Err(error) => {
