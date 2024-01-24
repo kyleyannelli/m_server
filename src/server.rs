@@ -1,11 +1,18 @@
-use std::{net::TcpListener, sync::{Mutex, Arc}};
+use std::{net::TcpListener, sync::{Arc, RwLock}};
 
-use crate::{router::HttpRouter, http::request::HttpRequest, logger};
+use tokio::runtime::Builder;
+
+use crate::{router::HttpRouter, http::request::{HttpRequest, HttpRequestMethod}, logger};
+
+lazy_static! {
+    static ref ROUTER: Arc<RwLock<HttpRouter>> = Arc::new(RwLock::new(HttpRouter::new()));
+}
 
 pub struct HttpServer {
     #[allow(dead_code)]
     bind_addr: String,
     tcp_listener: TcpListener,
+    pool_size: usize,
 }
 
 impl HttpServer {
@@ -21,20 +28,50 @@ impl HttpServer {
         HttpServer {
             bind_addr: bind_addr.to_string(),
             tcp_listener,
+            pool_size: 12,
         }
+    }
+
+    pub fn add_route(&mut self, method: HttpRequestMethod, path: &str, handler: fn(&mut HttpRequest)) {
+        match ROUTER.write() {
+            Ok(mut router) => {
+                router.add_route(method, path, handler);
+            },
+            Err(error) => {
+                log::error!("Failed to get router lock! Route not added!\n\t{}", error.to_string());
+            }
+        };
+    }
+
+    pub fn set_pool_size(mut self, pool_size: usize) -> HttpServer {
+        self.pool_size = pool_size;
+        self
     }
 
     /// Begins handling incoming connections.
     ///
-    pub fn start(&self, router: HttpRouter) {
+    pub fn start(&self) {
+        let runtime = Builder::new_multi_thread()
+            .worker_threads(self.pool_size)
+            .enable_all()
+            .build()
+            .unwrap();
+
+
         for stream_res in self.tcp_listener.incoming() {
             match stream_res {
-                Ok(result) => {
-                    let http_req: HttpRequest = HttpRequest::new(result);
-                    let wrapped_req = Arc::new(Mutex::new(http_req));
-                    // commenting this out until router impl is done
-                    // Self::handle_connection(http_req);
-                    router.handle_request(wrapped_req);
+                Ok(stream) => {
+                    runtime.spawn(async move {
+                        match ROUTER.read() {
+                            Ok(ok_router) => {
+                                ok_router.handle_request(stream);
+                            },
+                            Err(error) => {
+                                log::error!("Failed to get router lock!\n\t{}", error.to_string());
+                                return;
+                            }
+                        };
+                    });
                 },
                 Err(error) => match error.kind() {
                     std::io::ErrorKind::WouldBlock => {
@@ -48,13 +85,14 @@ impl HttpServer {
                 }
             }
         }
+        runtime.shutdown_timeout(std::time::Duration::from_secs(30));
     }
 
     fn start_listening(bind_addr: &str) -> TcpListener {
         match TcpListener::bind(bind_addr) {
             Ok(lis) => {
                 log::info!("{} {}", "Server bound on", bind_addr);
-                return lis;
+                lis
             },
             Err(error) => match error.kind() {
                 std::io::ErrorKind::AddrInUse => {

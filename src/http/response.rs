@@ -11,6 +11,7 @@ impl HttpResponse {
     const RESPONSE_OK: &'static str = "200 OK";
     const RESPONSE_NOT_FOUND: &'static str = "404 Not Found";
     const RESPONSE_ERROR: &'static str = "500 Internal Server Error";
+    const BAD_REQUEST: &'static str = "400 Bad Request";
     const RESPONSE_CREATED: &'static str = "201 Created";
     const RESPONSE_ACCEPTED: &'static str = "Accepted";
     
@@ -20,32 +21,37 @@ impl HttpResponse {
         }
     }
 
+    pub fn bad_request() -> HttpResponse {
+        let response_str: String = Self::status_message(Self::BAD_REQUEST);
+        HttpResponse::new(response_str)
+    }
+
     pub fn ok() -> HttpResponse {
         let response_str: String = Self::status_message(Self::RESPONSE_OK);
-        return HttpResponse::new(response_str);
+        HttpResponse::new(response_str)
     }
 
     pub fn not_found() -> HttpResponse {
         let response_str: String = Self::status_message(Self::RESPONSE_NOT_FOUND);
-        return HttpResponse::new(response_str);
+        HttpResponse::new(response_str)
     }
 
     pub fn created() -> HttpResponse {
         let response_str: String = Self::status_message(Self::RESPONSE_CREATED);
-        return HttpResponse::new(response_str);
+        HttpResponse::new(response_str)
     }
 
     pub fn accepted() -> HttpResponse {
         let response_str: String = Self::status_message(Self::RESPONSE_ACCEPTED);
-        return HttpResponse::new(response_str);
+        HttpResponse::new(response_str)
     }
 
     pub fn error() -> HttpResponse {
         let response_str: String = Self::status_message(Self::RESPONSE_ERROR);
-        return HttpResponse::new(response_str);
+        HttpResponse::new(response_str)
     }
 
     fn status_message(status_code: &str) -> String {
-        return format!("{} {}\n{}\n{}{}", Self::HTTP_VER, status_code, self::HEADER_SERVER_NAME, self::HEADER_CONTENT_TYPE, Self::HTTP_PAD);
+        format!("{} {}\n{}\n{}{}", Self::HTTP_VER, status_code, self::HEADER_SERVER_NAME, self::HEADER_CONTENT_TYPE, Self::HTTP_PAD)
     }
 }

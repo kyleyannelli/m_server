@@ -1,6 +1,6 @@
 [package]
 name = "m_server"
-version = "0.3.0-alpha"
+version = "1.0.0-alpha"
 status = "alpha"
 edition = "2021"
 description = "A minimal HTTP server framework for delivering JSON data. \nALPHA: NOT READY FOR PRODUCTION!"
@@ -14,7 +14,8 @@ readme = "README.md"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+lazy_static = "1.4.0"
 log = "0.4.20"
 log4rs = "1.2.0"
 regex = "1.10.2"
-threadpool = "1.8.1"
+tokio = { version = "1.35.1", features = ["full"] }

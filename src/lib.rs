@@ -1,9 +1,15 @@
+// currently there are conflicting issues with the compiler and clippy regarding static lifetimes
+#![allow(clippy::redundant_static_lifetimes)]
 pub mod server;
 pub mod router;
 pub mod http {
     pub mod request;
     pub mod response;
+    pub mod shared;
+    pub mod decoder;
 }
+#[macro_use]
+extern crate lazy_static;
 
 mod logger;
 
